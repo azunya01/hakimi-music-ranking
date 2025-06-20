@@ -1,82 +1,132 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>哈基米 · 音乐排行榜</title>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .video-card {
-            display: flex;
-            align-items: center;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: white;
-            margin-bottom: 15px;
-            padding: 10px;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
-        }
-        .video-card img {
-            width: 160px;
-            height: 90px;
-            border-radius: 6px;
-            object-fit: cover;
-        }
-        .video-info {
-            margin-left: 15px;
-        }
-        .video-info h3 {
-            margin: 0;
-            font-size: 18px;
-        }
-        .video-info p {
-            margin: 4px 0;
-            color: #666;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>哈基米音乐播放量排行榜</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f7f7f7;
+      margin: 20px;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    #searchInput {
+      display: block;
+      margin: 20px auto;
+      padding: 8px 12px;
+      width: 300px;
+      font-size: 16px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+    }
+
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 95%;
+      background-color: white;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #e8e8e8;
+    }
+
+    img {
+      width: 120px;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .play-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      background-color: #ff6699;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .play-btn:hover {
+      background-color: #ff3366;
+    }
+  </style>
 </head>
 <body>
+  <h1>哈基米音乐播放量排行榜</h1>
 
-<h2>哈基米 · 音乐播放量排行榜</h2>
-<div id="video-list"></div>
+  <input type="text" id="searchInput" placeholder="搜索标题或UP主…">
 
-<script>
-Papa.parse("哈基米_播放量排行.csv", {
-    download: true,
-    header: true,
-    complete: function(results) {
-        const data = results.data;
-        const container = document.getElementById('video-list');
+  <table id="rankingTable">
+    <thead>
+      <tr>
+        <th>封面</th>
+        <th>标题</th>
+        <th>播放量</th>
+        <th>UP主</th>
+        <th>播放</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="5">正在加载数据...</td></tr>
+    </tbody>
+  </table>
 
-        data.sort((a, b) => b.play_count - a.play_count);
+  <script>
+    function loadCSVandRenderTable() {
+      fetch("哈基米_播放量排行.csv")
+        .then(response => response.text())
+        .then(csv => {
+          const rows = csv.trim().split("\n").slice(1); // 去掉表头
+          const tbody = document.getElementById("tableBody");
+          tbody.innerHTML = "";
 
-            data.forEach((item, index) => {
-            if (!item.title || !item.cover) return;
-
-            let cover = item.cover.split('@')[0];  // 去掉后缀
-            const card = document.createElement('div');
-            card.className = 'video-card';
-
-            card.innerHTML = `
-                <img src="${cover}" alt="封面" referrerpolicy="no-referrer">
-                <div class="video-info">
-                    <h3><a href="${item.link}" target="_blank">${index + 1}. ${item.title}</a></h3>
-                    <p>👁️ 播放量：${parseInt(item.play_count).toLocaleString()}</p>
-                    <p>👤 UP主：${item.uploader}</p>
-                    <p><a href="${item.link}" target="_blank">▶️ 点击播放</a></p>
-                </div>
+          rows.forEach((line, i) => {
+            const parts = line.split(",");
+            if (parts.length < 6) return; // 跳过格式不对的行
+            const [title, bvid, link, play_count, uploader, cover] = parts;
+            const row = `
+              <tr>
+                <td><img src="${cover.split('@')[0]}" alt="封面" referrerpolicy="no-referrer"></td>
+                <td>${title}</td>
+                <td>${Number(play_count).toLocaleString()}</td>
+                <td>${uploader}</td>
+                <td><a class="play-btn" href="${link}" target="_blank">▶ 播放</a></td>
+              </tr>
             `;
-            container.appendChild(card);
+            tbody.insertAdjacentHTML("beforeend", row);
+          });
+        })
+        .catch(error => {
+          document.getElementById("tableBody").innerHTML = "<tr><td colspan='5'>加载失败</td></tr>";
+          console.error("CSV 加载错误：", error);
         });
-
-
     }
-});
-</script>
 
+    loadCSVandRenderTable();
+
+    // 搜索功能
+    document.getElementById("searchInput").addEventListener("input", function () {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#rankingTable tbody tr");
+      rows.forEach(row => {
+        const title = row.cells[1]?.textContent.toLowerCase() || "";
+        const uploader = row.cells[3]?.textContent.toLowerCase() || "";
+        row.style.display = (title.includes(filter) || uploader.includes(filter)) ? "" : "none";
+      });
+    });
+  </script>
 </body>
 </html>
