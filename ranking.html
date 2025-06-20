@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>哈基米 · 音乐排行榜</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .video-card {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 15px;
+            padding: 10px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
+        }
+        .video-card img {
+            width: 160px;
+            height: 90px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        .video-info {
+            margin-left: 15px;
+        }
+        .video-info h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .video-info p {
+            margin: 4px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<h2>哈基米 · 音乐播放量排行榜</h2>
+<div id="video-list"></div>
+
+<script>
+Papa.parse("哈基米_播放量排行.csv", {
+    download: true,
+    header: true,
+    complete: function(results) {
+        const data = results.data;
+        const container = document.getElementById('video-list');
+
+        data.sort((a, b) => b.play_count - a.play_count);
+
+            data.forEach((item, index) => {
+            if (!item.title || !item.cover) return;
+
+            let cover = item.cover.split('@')[0];  // 去掉后缀
+            const card = document.createElement('div');
+            card.className = 'video-card';
+
+            card.innerHTML = `
+                <img src="${cover}" alt="封面" referrerpolicy="no-referrer">
+                <div class="video-info">
+                    <h3><a href="${item.link}" target="_blank">${index + 1}. ${item.title}</a></h3>
+                    <p>👁️ 播放量：${parseInt(item.play_count).toLocaleString()}</p>
+                    <p>👤 UP主：${item.uploader}</p>
+                    <p><a href="${item.link}" target="_blank">▶️ 点击播放</a></p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+
+    }
+});
+</script>
+
+</body>
+</html>
